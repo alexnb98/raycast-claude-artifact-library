@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Artifact Library demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* One 1340x684 scene, driven only by setTime(t): same t, same pixels (so it can be rendered frame by frame). */
+html, body { margin: 0; background: #e9e7e3; font-family: "Inter", -apple-system, sans-serif; }
+body.render { background: transparent; }
+.stage { padding: 24px; display: grid; gap: 14px; justify-items: center; }
+body.render .stage { padding: 0; }
+.ctrl { display: flex; gap: 12px; align-items: center; font-size: 13px; color: #444; width: 1340px; }
+body.render .ctrl { display: none; }
+.ctrl input { flex: 1; } .ctrl button { font: 500 13px Inter; padding: 6px 12px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+.ctrl output { font-variant-numeric: tabular-nums; width: 52px; }
+
+.canvas { width: 1340px; height: 684px; border-radius: 32px; overflow: hidden; position: relative; -webkit-font-smoothing: antialiased;
+  background: radial-gradient(70% 60% at 50% -8%, rgba(255,99,99,.85) 0%, rgba(255,99,99,.25) 40%, transparent 70%), #08080a; }
+.win { position: absolute; left: 150px; top: 70px; width: 1040px; height: 560px; border-radius: 16px; overflow: hidden;
+  display: grid; grid-template-rows: 58px 1fr 40px; background: #161618; color: #ececee;
+  box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
+  --sub: #8b8b93; --hair: #2c2c31; --sel: #2f2f35; --chip: #2a2a30; }
+.search { display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--hair); font-size: 17px; }
+.search .q { flex: 1; white-space: nowrap; overflow: hidden; }
+.ph { color: var(--sub); }
+.caret { display: inline-block; width: 2px; height: 20px; background: #ececee; vertical-align: -4px; margin-left: 1px; }
+.dd { font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--chip); display: flex; gap: 8px; align-items: center; }
+.dd.hot { background: #3a3a41; }
+.body { display: grid; grid-template-columns: 46% 54%; min-height: 0; }
+.list { padding: 8px; border-right: 1px solid var(--hair); display: grid; align-content: start; gap: 2px; }
+.sec { font-size: 12px; color: var(--sub); padding: 8px 10px 4px; font-weight: 500; }
+.it { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 10px; font-size: 14px; }
+.it.sel { background: var(--sel); }
+.it .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--sub); white-space: nowrap; }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+.tg-work { color: #a07dff; background: rgba(143,99,255,.18); }
+.tg-side { color: #3cc47c; background: rgba(47,174,107,.18); }
+.tg-personal { color: #ff8f45; background: rgba(240,124,46,.18); }
+.th { width: 44px; height: 30px; border-radius: 6px; overflow: hidden; position: relative; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+.th i, .big i { position: absolute; display: block; border-radius: 1px; }
+.detail { padding: 14px 18px; display: grid; grid-template-rows: auto 1fr; gap: 14px; min-height: 0; }
+.big { height: 228px; border-radius: 10px; position: relative; overflow: hidden; background: #fff; }
+.big .in { position: absolute; left: 50%; top: 50%; width: 44px; height: 30px; transform: translate(-50%, -50%) scale(7.4); }
+.meta { display: grid; grid-template-columns: 110px 1fr; row-gap: 9px; font-size: 13px; align-content: start; margin: 0; }
+.meta dt { color: var(--sub); } .meta dd { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta .kw { display: flex; gap: 6px; } .meta .kw span { background: var(--chip); padding: 1px 7px; border-radius: 5px; font-size: 12px; }
+.bar { border-top: 1px solid var(--hair); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 12.5px; color: var(--sub); }
+.bar .r { display: flex; gap: 16px; align-items: center; } .bar b { color: #ececee; font-weight: 600; }
+.k { display: inline-block; min-width: 20px; padding: 1px 5px; border-radius: 5px; background: var(--chip); text-align: center; font-size: 12px; color: var(--sub); }
+.logo { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, #ff6363, #d9304f); display: inline-block; }
+.toast { display: flex; gap: 8px; align-items: center; color: #ececee; }
+.spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #55555c; border-top-color: #ff6363; display: inline-block; }
+.okdot { width: 12px; height: 12px; border-radius: 50%; background: #3cc47c; display: inline-block; }
+.pop { position: absolute; border-radius: 12px; padding: 6px; font-size: 13.5px; background: #26262b; color: #ececee;
+  box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.08); --sub: #8b8b93; --chip: #34343a; --sel: #3a3a41; }
+.pop .h { font-size: 11.5px; color: var(--sub); padding: 7px 10px 3px; font-weight: 500; }
+.pop .o { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 7px 10px; border-radius: 8px; }
+.pop .o.sel { background: var(--sel); }
+.pop .o .l { display: flex; gap: 9px; align-items: center; }
+.pop .o.lift { background: #ff6363; color: #fff; transform: scale(1.05); box-shadow: 0 10px 26px rgba(0,0,0,.35); }
+.pop .o.lift .k { background: rgba(255,255,255,.25); color: #fff; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.keys { position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center;
+  background: rgba(255,255,255,.1); backdrop-filter: blur(8px); padding: 6px 10px; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.15); }
+.keys .kc { min-width: 30px; height: 30px; border-radius: 7px; background: rgba(255,255,255,.16); display: grid; place-items: center; padding: 0 8px; font-size: 16px; }
+.keys .lab { margin-left: 6px; font-weight: 500; color: rgba(255,255,255,.85); }
+.cursor { position: absolute; width: 22px; height: 22px; pointer-events: none; z-index: 20; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+/* Claude Code window */
+.cc { position: absolute; top: 96px; width: 560px; height: 500px; border-radius: 14px; overflow: hidden; background: #262624; color: #e8e6e1;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.1); display: grid; grid-template-rows: 40px 1fr 56px; z-index: 10; }
+.cc .tb { display: flex; align-items: center; gap: 8px; padding: 0 14px; font-size: 13px; color: #a9a59c; border-bottom: 1px solid #3a3936; }
+.cc .tb .lights { display: flex; gap: 6px; margin-right: 8px; } .cc .tb .lights i { width: 11px; height: 11px; border-radius: 50%; display: block; background: #4a4945; }
+.cc .tb b { color: #e8e6e1; font-weight: 600; }
+.cc .msgs { padding: 18px 20px; display: grid; gap: 14px; align-content: start; font-size: 14px; line-height: 1.5; }
+.cc .you { justify-self: end; background: #3a3936; padding: 10px 14px; border-radius: 14px; max-width: 80%; }
+.cc .claude { display: grid; gap: 8px; }
+.cc .tool { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; color: #a9a59c; background: #1f1f1d; border-radius: 8px; padding: 8px 10px; }
+.cc .tool b { color: #d97757; font-weight: 500; }
+.cc .link { color: #e8e6e1; text-decoration: underline; text-decoration-color: #d97757; }
+.cc .inp { margin: 0 14px 14px; border-radius: 12px; background: #30302e; color: #8d8a83; font-size: 14px; display: flex; align-items: center; padding: 0 14px; box-shadow: 0 0 0 1px #3f3e3b; }
+.star { width: 16px; height: 16px; display: inline-block; vertical-align: -3px; margin-right: 6px; }
+</style></head>
+<body>
+<div class="stage">
+  <div class="canvas" id="canvas"></div>
+  <div class="ctrl"><button id="play" type="button">Pause</button><input id="scrub" type="range" min="0" max="15" step="0.01" value="0"><output id="tout">0.00s</output></div>
+</div>
+<script>
+const DUR = 15;
+const ITEMS = [
+  { t: "Q1 roadmap", type: "Slides", cat: "work", th: "slides", up: "21 Nov 2026", conv: "Roadmap deck for the all-hands", kw: ["planning", "okr", "quarter"], v: 4 },
+  { t: "Pricing experiment readout", type: "", cat: "work", th: "page", up: "24 Nov 2026", conv: "Readout for the pricing test", kw: ["price", "a/b test", "conversion"], v: 3 },
+  { t: "Onboarding flow canvas", type: "Design", cat: "work", th: "design", up: "19 Nov 2026", conv: "Redesign the signup steps", kw: ["signup", "screens", "flow"], v: 6 },
+  { t: "Garden app landing page", type: "", cat: "side", th: "landing", up: "16 Nov 2026", conv: "Landing page for the garden app", kw: ["website", "hero", "plants"], v: 2 },
+  { t: "Lisbon trip budget", type: "Sheet", cat: "personal", th: "sheet", up: "12 Nov 2026", conv: "Plan the Lisbon weekend", kw: ["travel", "costs", "flights"], v: 1 },
+  { t: "Kitchen renovation plan", type: "Doc", cat: "personal", th: "doc", up: "8 Nov 2026", conv: "Compare kitchen quotes", kw: ["home", "quotes", "budget"], v: 2 },
+  { t: "Weekly signups dashboard", type: "Data", cat: "work", th: "data", up: "5 Nov 2026", conv: "Chart weekly signups", kw: ["metrics", "growth", "chart"], v: 5 },
+];
+const CAT = { work: "Work", side: "Side project", personal: "Personal" };
+const DOT = { work: "#a07dff", side: "#3cc47c", personal: "#ff8f45" };
+const TYPES = ["Page", "Slides", "Design", "Doc", "Sheet", "Data"];
+function thumb(kind) {
+  const b = (x, y, w, h, c) => `<i style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${c}"></i>`;
+  return {
+    slides: b(0,0,44,30,"#1e2a4a") + b(5,7,22,3,"#fff") + b(5,13,14,2,"#9fb0d8") + b(27,9,12,14,"#ff6363"),
+    page: b(4,4,20,3,"#222") + b(4,10,36,2,"#ccc") + b(4,14,30,2,"#ccc") + b(4,19,10,8,"#8f63ff") + b(16,22,10,5,"#c9b8ff") + b(28,17,10,10,"#8f63ff"),
+    design: b(0,0,44,30,"#f3f0ff") + b(4,4,11,22,"#fff") + b(17,4,11,22,"#fff") + b(30,4,10,22,"#fff") + b(6,7,7,4,"#8f63ff") + b(19,7,7,4,"#2fae6b") + b(32,7,6,4,"#f07c2e"),
+    landing: b(0,0,44,13,"#2fae6b") + b(5,4,18,3,"#fff") + b(5,9,10,2,"#d7f5e5") + b(4,17,11,9,"#e7f7ef") + b(17,17,11,9,"#e7f7ef") + b(30,17,10,9,"#e7f7ef"),
+    sheet: b(0,0,44,5,"#f07c2e") + [6,12,18,24].map(y => b(2,y,40,1,"#e5e5e5")).join("") + [12,24,34].map(x => b(x,5,1,25,"#e5e5e5")).join("") + b(25,13,8,4,"#ffe3cf"),
+    doc: b(10,3,24,3,"#222") + [9,13,17,21,25].map((y,i) => b(10,y,i % 2 ? 20 : 24,1.5,"#c7c7c7")).join(""),
+    data: b(4,4,12,7,"#f3f0ff") + b(18,4,12,7,"#f3f0ff") + b(32,4,8,7,"#f3f0ff") + [6,10,8,14,12,17].map((h,i) => b(5 + i * 6,27 - h,4,h,"#8f63ff")).join(""),
+  }[kind];
+}
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const lerp = (a, b, p) => a + (b - a) * p;
+// Cursor path with a slight arc.
+function path(p0, p1, p) { const e = ease(p); const mx = (p0.x + p1.x) / 2, my = Math.min(p0.y, p1.y) - 40;
+  const x = (1 - e) * (1 - e) * p0.x + 2 * (1 - e) * e * mx + e * e * p1.x, y = (1 - e) * (1 - e) * p0.y + 2 * (1 - e) * e * my + e * e * p1.y; return { x, y }; }
+
+const SENTENCE = "the pricing test results from last week";
+const KEYWORDS = "pricing test results experiment";
+// Timeline (seconds)
+const T = { browse: [0.6, 2.8], toDd: [3.0, 3.8], ddOpen: 3.95, toWork: [4.15, 4.9], pick: 5.05, typing: [5.9, 7.9], cmdEnter: 8.1,
+  haikuDone: 9.2, cmdK: 10.1, openConv: 11.1, ccIn: [11.35, 11.85], ccOut: [14.0, 14.5] };
+
+function stateAt(t) {
+  const s = { sel: 0, filter: "All", dd: false, ddHover: -1, query: "", caret: true, toast: null, actions: false, lift: false,
+    keys: null, cc: 0, list: ITEMS, cursor: null, ddHot: false, fade: 1 };
+  // 1. browse: selection steps down the list
+  s.sel = Math.min(4, Math.floor(seg(t, T.browse[0], T.browse[1]) * 5));
+  if (t < T.browse[0]) s.sel = 0;
+  // 2. cursor to the filter dropdown, open it, pick Work
+  const home = { x: 1010, y: 640 }, dd = { x: 1152, y: 99 }, work = { x: 930, y: 191 };
+  if (t >= T.toDd[0] && t < T.pick + 0.5) {
+    if (t < T.toDd[1]) s.cursor = path(home, dd, seg(t, ...T.toDd));
+    else if (t < T.toWork[0]) s.cursor = dd;
+    else s.cursor = path(dd, work, seg(t, ...T.toWork));
+    if (t >= T.toWork[1]) s.cursor = work;
+    s.ddHot = t >= T.toDd[1] - 0.05 && t < T.ddOpen + 0.1;
+  }
+  if (t >= T.ddOpen && t < T.pick) { s.dd = true; s.ddHover = t > T.toWork[1] - 0.15 ? 1 : (t > T.toWork[0] + 0.25 ? 0 : -1); }
+  if (t >= T.pick) { s.filter = "Work"; s.list = ITEMS.filter(i => i.cat === "work"); s.sel = 0; s.fade = seg(t, T.pick, T.pick + 0.3); }
+  if (t >= T.pick + 0.5 && t < T.typing[0]) s.cursor = path(work, home, seg(t, T.pick + 0.5, T.pick + 1.2));
+  // browse the filtered list a little
+  if (t >= T.pick + 0.6 && t < T.typing[0]) s.sel = Math.min(2, Math.floor(seg(t, T.pick + 0.6, T.typing[0]) * 3));
+  // 3. type a vague sentence, ⌘↵ asks Haiku
+  if (t >= T.typing[0]) s.query = SENTENCE.slice(0, Math.round(seg(t, ...T.typing) * SENTENCE.length));
+  if (t >= T.typing[0] && t < T.cmdEnter) { s.fade = 0.45; }
+  if (t >= T.cmdEnter - 0.15 && t < T.cmdEnter + 0.9) s.keys = { k: ["⌘", "↵"], lab: "Ask Haiku" };
+  if (t >= T.cmdEnter && t < T.haikuDone) { s.toast = { spin: true, text: "Asking Haiku…" }; s.fade = 0.45 - 0.2 * seg(t, T.cmdEnter, T.haikuDone); }
+  if (t >= T.haikuDone) {
+    s.query = KEYWORDS; s.toast = { spin: false, text: "Haiku: pricing test results experiment" };
+    s.list = [ITEMS[1], ITEMS[6]]; s.sel = 0; s.fade = seg(t, T.haikuDone, T.haikuDone + 0.3);
+  }
+  // 4. ⌘K actions, Open Conversation, ⌘O
+  if (t >= T.cmdK - 0.15 && t < T.cmdK + 0.8) s.keys = { k: ["⌘", "K"], lab: "Actions" };
+  if (t >= T.cmdK && t < T.openConv + 0.25) { s.actions = true; s.lift = t >= T.cmdK + 0.55; }
+  if (t >= T.openConv - 0.15 && t < T.openConv + 0.9) s.keys = { k: ["⌘", "O"], lab: "Open Conversation" };
+  s.cc = ease(seg(t, ...T.ccIn)) * (1 - ease(seg(t, ...T.ccOut)));
+  // back to the start frame for a clean loop
+  if (t >= T.ccOut[1]) { Object.assign(s, { query: "", toast: null, list: ITEMS, sel: 0, filter: "All", fade: seg(t, T.ccOut[1], T.ccOut[1] + 0.3) }); }
+  s.caret = Math.floor(t * 2) % 2 === 0 || (t >= T.typing[0] && t < T.typing[1]);
+  return s;
+}
+
+function render(t) {
+  const s = stateAt(t);
+  const cur = s.sel >= 0 ? s.list[s.sel] : null;
+  const rows = s.list.map((it, i) => `<div class="it${i === s.sel ? " sel" : ""}"><div class="th">${thumb(it.th)}</div><div class="t">${it.t}</div>
+    <div class="acc">${it.type ? `<span>${it.type}</span>` : ""}<span class="tag tg-${it.cat}">${CAT[it.cat]}</span></div></div>`).join("");
+  const detail = cur ? `<div class="big"><div class="in">${thumb(cur.th)}</div></div>
+    <dl class="meta"><dt>Updated</dt><dd>${cur.up}</dd><dt>Category</dt><dd><span class="tag tg-${cur.cat}">${CAT[cur.cat]}</span></dd>
+    <dt>Type</dt><dd>${cur.type || "Page"}</dd><dt>Versions</dt><dd>${cur.v}</dd><dt>Conversation</dt><dd>${cur.conv}</dd>
+    <dt>Keywords</dt><dd class="kw">${cur.kw.map(k => `<span>${k}</span>`).join("")}</dd></dl>` : "";
+  const q = s.query ? `<span>${s.query}</span>` : `<span class="ph">Search artifacts, or type a sentence and press ⌘↵ to ask Haiku</span>`;
+  const left = s.toast ? `<span class="toast">${s.toast.spin ? `<span class="spin" style="transform:rotate(${t * 720}deg)"></span>` : `<span class="okdot"></span>`}${s.toast.text}</span>`
+    : `<span style="display:flex;gap:8px;align-items:center"><span class="logo"></span>Artifact Library</span>`;
+  let html = `<div class="win">
+    <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <div class="q">${q}${s.caret ? `<span class="caret"></span>` : ""}</div>
+      <div class="dd${s.ddHot ? " hot" : ""}">${s.filter} <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 4l3 3 3-3" stroke="currentColor" fill="none" stroke-width="1.5"/></svg></div></div>
+    <div class="body"><div class="list" style="opacity:${s.fade}"><div class="sec">${s.list.length ? (s.query ? "Results" : "Artifacts") : ""}</div>${rows}</div>
+      <div class="detail" style="opacity:${s.fade}">${detail}</div></div>
+    <div class="bar">${left}<span class="r"><span><b>Open in Browser</b> <span class="k">↵</span></span><span>Actions <span class="k">⌘</span> <span class="k">K</span></span></span></div>
+  </div>`;
+  if (s.dd) html += `<div class="pop" style="left:878px;top:116px;width:290px;opacity:${seg(t, T.ddOpen, T.ddOpen + 0.15)}">
+      <div class="o${s.ddHover === 0 ? " sel" : ""}">All</div><div class="h">Category</div>
+      ${Object.keys(CAT).map((c, i) => `<div class="o${s.ddHover === i + 1 ? " sel" : ""}"><span class="l"><span class="dot" style="background:${DOT[c]}"></span>${CAT[c]}</span></div>`).join("")}
+      <div class="h">Type</div>${TYPES.map(x => `<div class="o"><span class="l">${x}</span></div>`).join("")}</div>`;
+  if (s.actions) html += `<div class="pop" style="left:850px;top:392px;width:320px;opacity:${seg(t, T.cmdK, T.cmdK + 0.15)}">
+      <div class="o${s.lift ? "" : " sel"}"><span class="l">Open in Browser</span><span class="k">↵</span></div>
+      <div class="o"><span class="l">Ask Haiku</span><span><span class="k">⌘</span> <span class="k">↵</span></span></div>
+      <div class="o${s.lift ? " lift" : ""}"><span class="l"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H8l-4 4z"/></svg>Open Conversation</span><span><span class="k">⌘</span> <span class="k">O</span></span></div>
+      <div class="o"><span class="l">Copy Link</span><span><span class="k">⌘</span> <span class="k">⇧</span> <span class="k">C</span></span></div>
+      <div class="o"><span class="l">Quick Look</span><span><span class="k">⌘</span> <span class="k">Y</span></span></div></div>`;
+  if (s.cc > 0) html += `<div class="cc" style="left:${lerp(1360, 700, s.cc)}px;opacity:${clamp(s.cc * 1.5)}">
+      <div class="tb"><span class="lights"><i></i><i></i><i></i></span><b>Pricing test readout</b> · Claude Code</div>
+      <div class="msgs">
+        <div class="you">Write up the pricing test results as a readout I can share with the team.</div>
+        <div class="claude"><div>The test ran for two weeks. The higher price kept conversion within 0.3 points of control, so revenue per visitor went up.</div>
+          <div class="tool"><b>Artifact</b> publish readout.html</div>
+          <div>Published: <span class="link">Pricing experiment readout</span></div></div>
+      </div>
+      <div class="inp">Reply to Claude…</div></div>`;
+  if (s.keys) html += `<div class="keys">${s.keys.k.map(k => `<span class="kc">${k}</span>`).join("")}<span class="lab">${s.keys.lab}</span></div>`;
+  if (s.cursor) html += `<svg class="cursor" style="left:${s.cursor.x - 3}px;top:${s.cursor.y - 2}px" viewBox="0 0 22 22"><path d="M3 2l15 9-6.5 1.6L9 19z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+  document.getElementById("canvas").innerHTML = html;
+}
+window.setTime = render;
+window.DURATION = DUR;
+
+// Local preview: real-time loop with pause and scrubber. ?render=1 hides controls and waits for setTime calls.
+const params = new URLSearchParams(location.search);
+if (params.has("square")) document.getElementById("canvas").style.borderRadius = "0";
+if (params.has("render")) { document.body.classList.add("render"); render(Number(params.get("t") || 0)); }
+else {
+  let playing = true, t0 = performance.now(), off = 0;
+  const scrub = document.getElementById("scrub"), out = document.getElementById("tout"), btn = document.getElementById("play");
+  scrub.max = DUR;
+  const tick = now => { if (playing) { const t = (off + (now - t0) / 1000) % DUR; render(t); scrub.value = t; out.textContent = t.toFixed(2) + "s"; } requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+  btn.onclick = () => { playing = !playing; btn.textContent = playing ? "Pause" : "Play"; if (playing) { off = Number(scrub.value); t0 = performance.now(); } };
+  scrub.oninput = () => { playing = false; btn.textContent = "Play"; render(Number(scrub.value)); out.textContent = Number(scrub.value).toFixed(2) + "s"; };
+}
+</script>
+</body></html>

@@ -1,5 +1,7 @@
 # Raycast Claude Artifact Library
 
+![Search Artifacts in Raycast: browse the list, filter by category, ask Haiku, open the conversation](docs/demo.gif)
+
 Find every claude.ai artifact you published from Claude Code again, from Raycast.
 
 Each time Claude Code publishes an artifact, a small hook saves it to a local library: a copy of the
